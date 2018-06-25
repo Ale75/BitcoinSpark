@@ -99,10 +99,15 @@ To start bitcoind with this option follow this steps
     nano bitcoind.conf
 ```
 
-Append this row
+Append this rows
 ```
     # Run on the test network instead of the real bitcoin network.
     testnet=1
+    
+    # Enable bitcoind to send blocks without witness 
+    # https://github.com/bitcoinj/bitcoinj/issues/1348
+    -rpcserialversion=0
+    
 
 ```
 

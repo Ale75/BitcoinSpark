@@ -10,7 +10,7 @@ console.log('Subscriber connected to port 28332');
 sock.on('message', function(topic, message) {
 
     console.log(new Date());
-    console.log('received a message related to:', topic, 'containing message:', message);
+    console.log('received a message related to:', topic.toString(), 'containing message:', message);
 
   var m = {
       topic: topic,
@@ -18,7 +18,8 @@ sock.on('message', function(topic, message) {
       hexMessage: toHexString(message),
       date : new Date()
   };
- /*fs.appendFile(__dirname + "/bitcoin.txt", JSON.stringify(m) + "\n", function(err) {
+
+ fs.appendFile(__dirname + "/bitcoin.txt", JSON.stringify(m) + "\n", function(err) {
     if(err) {
         return console.log(err);
     } else {
@@ -34,7 +35,7 @@ sock.on('message', function(topic, message) {
         } else {
             console.log("The file was saved!");
         }
-    });*/
+    });
 
 });
 

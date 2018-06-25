@@ -2,6 +2,8 @@
 var zmq = require('zmq')
   , sock = zmq.socket('pub');
 
+var sleep = require('sleep');
+
 var fs = require('fs');
 var sendNumber= 0;
 
@@ -11,7 +13,7 @@ console.log('Publisher bound to port 28332');
 setInterval(function(){
 
 	//var path = __dirname + "/home/antonio/.bitcoin/testnet3/blocks";
-	var path = __dirname + "/bitcoin_txt.txt";
+	var path = __dirname + "/bitcoin.txt";
 
 	/*fs.readdir( path ,function(err,files){
 
@@ -38,10 +40,10 @@ setInterval(function(){
         if (index === arr.length - 1 && line === "") { return; }
 
         var json = JSON.parse(line);
-        console.log("Inviato il blocco: " + index++);
         //console.log("Blocco : " + json.message.data);
         //console.log("Blocco hex: " + json.hexMessage);
-
+        sleep.sleep(30);
+        console.log("Inviato il blocco: " + index++ + " at " + new Date());
         sock.send([ 'rawblock',  new Buffer(json.message.data)    ] );
     });
 
