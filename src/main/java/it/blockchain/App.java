@@ -1,17 +1,24 @@
 package it.blockchain;
 
 import akka.zeromq.Subscribe;
+import it.blockchain.utils.BlockTestNetManager;
 import it.blockchain.utils.PropertiesReader;
 import org.apache.log4j.Logger;
 import org.apache.spark.SparkConf;
+import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.graphx.Graph;
+import org.apache.spark.graphx.VertexRDD;
+import org.apache.spark.rdd.RDD;
+import org.apache.spark.storage.BlockManager;
 import org.apache.spark.streaming.Duration;
 import org.apache.spark.streaming.api.java.JavaDStream;
+import org.apache.spark.streaming.api.java.JavaPairDStream;
 import org.apache.spark.streaming.api.java.JavaStreamingContext;
 import org.apache.spark.streaming.zeromq.ZeroMQUtils;
 import org.bitcoinj.core.*;
 import org.bitcoinj.params.TestNet3Params;
+import scala.Tuple2;
 
 import java.util.Arrays;
 import java.util.List;
@@ -89,6 +96,7 @@ public class App {
         JavaDStream<byte[]> lines = ZeroMQUtils.createStream(streamingContext, host, subscribe
                 , bytesToObjects );
 
+
         /**
          * Read raw array bytes and generate a Block object
          */
@@ -97,15 +105,9 @@ public class App {
             List<byte[]> blockAsByte =  bytes.collect();
 
            if(!blockAsByte.isEmpty()){
-               log.info(blockAsByte);
-               Block block = null;
-               NetworkParameters params = TestNet3Params.get();
-               Context context = new Context(params);
-               BitcoinSerializer bt = new BitcoinSerializer(params,true);
-               block = bt.makeBlock(blockAsByte.get(0));
-               //block = new Block(params, bytes, context.getParams().getDefaultSerializer(), bytes.length); //Deprecated
+               BlockTestNetManager blockManager = new BlockTestNetManager();
+               Block block = blockManager.blockMakerFromBytes(blockAsByte);
                log.info("####### NEW BLOCK with hash: " + block.getHashAsString() + " ###########");
-
 
            }
 
@@ -117,5 +119,6 @@ public class App {
         streamingContext.awaitTermination();
 
     }
+
 
 }
