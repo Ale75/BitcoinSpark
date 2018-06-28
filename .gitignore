@@ -5,5 +5,3 @@ bitcoin.iml
 .idea/vcs.xml
 
 src/test/javascript/rawBitcoin\.txt
-
-src/test/javascript/bitcoin\.txt
