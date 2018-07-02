@@ -12,8 +12,10 @@ console.log('Publisher bound to port 28332');
 
 var path = __dirname + "/bitcoin.txt";
 
+//console.info("Linee nel file " + fs.readFileSync(path).toString().split("\n").length)
+
 fs.readFileSync(path).toString().split("\n").forEach(function(line, index, arr) {
-    console.info("Size del file: " + arr.length);
+
     if (index === arr.length - 1 && line === "") { return; }
 
     var json = JSON.parse(line);
