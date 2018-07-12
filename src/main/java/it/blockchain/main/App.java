@@ -1,13 +1,27 @@
 package it.blockchain.main;
 
 import akka.zeromq.Subscribe;
+import com.google.gson.Gson;
+import com.mongodb.DB;
+import com.mongodb.DBCollection;
+import com.mongodb.DBObject;
+import com.mongodb.Mongo;
+import com.mongodb.util.JSON;
+import it.blockchain.utils.KafkaProducerBuilder;
 import it.blockchain.bean.BitcoinTransaction;
+import it.blockchain.bean.TransactionDBWrapper;
 import it.blockchain.utils.BlockTestNetManager;
 import it.blockchain.utils.PropertiesReader;
+import org.apache.kafka.clients.producer.Producer;
+import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.log4j.Logger;
 import org.apache.spark.SparkConf;
+import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.function.Function;
+import org.apache.spark.api.java.function.VoidFunction2;
 import org.apache.spark.streaming.Duration;
+import org.apache.spark.streaming.Time;
 import org.apache.spark.streaming.api.java.JavaDStream;
 import org.apache.spark.streaming.api.java.JavaStreamingContext;
 import org.apache.spark.streaming.zeromq.ZeroMQUtils;
@@ -17,6 +31,7 @@ import org.bitcoinj.params.TestNet3Params;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 
 /**
  * Hello world!
@@ -30,19 +45,41 @@ public class App {
 
         Map<String,String> propMap = PropertiesReader.readProperties("bitcoin.properties");
 
+
+        String host = "tcp://"+ propMap.get("sparkHost") + ":" + propMap.get("sparkPort");
+        String hadoopHdfs = propMap.get("hadoopHDFS");
+        String mongoHost = propMap.get("mongoDBHost");
+        String mongoDBPort = propMap.get("mongoDBPort");
+        String mongoDB = propMap.get("mongoDB");
+        String mongoDBCollection = propMap.get("mongoCollection");
+
+        String kafkaHost = propMap.get("kafkaHost");
+        String kafkaPort = propMap.get("kafkaPort");
+        String kafkaTopic = propMap.get("kafkaTopic");
+        String kafkaAppID = propMap.get("kafkaAppID");
+
         if(log.isDebugEnabled()) {
 
             log.debug("Contesto caricato");
-            log.debug("Host di comunicazione :" + propMap.get("host"));
-            log.debug("Connesso a porta:" + propMap.get("port"));
+            log.debug("Host di comunicazione :" + propMap.get("sparkHost"));
+            log.debug("Connesso a porta:" + propMap.get("sparkPort"));
             log.debug("Topic :" + propMap.get("topic"));
         }
 
 
-        String host = "tcp://"+ propMap.get("host") + ":" + propMap.get("port");
-        log.info("Connessione a " +  propMap.get("host"));
-        String hadoopHdfs = propMap.get("hadoopHDFS");
+
+        log.info("Connessione a " +  propMap.get("sparkHost"));
         log.info("HadoopFS url: " + hadoopHdfs);
+        log.info("MongoDB host: " + mongoHost);
+        log.info("MongoDB : " + mongoDB);
+        log.info("MongoDB Collection: " + mongoDBCollection);
+        log.info("MongoDB Port: " + mongoDBPort);
+        log.info("KafkaHost: " + kafkaHost);
+        log.info("KafkaHost Port: " + kafkaPort);
+        log.info("Kafka Topic: " + kafkaTopic);
+        log.info("Kafka AppID: " + kafkaAppID);
+
+
 
         /**
          *
@@ -92,31 +129,58 @@ public class App {
 
 
         /**
-         * Read raw array bytes and generate a Block object
+         * Read raw array bytes and generate a Block object saved into MongoDB
          */
-        lines.foreachRDD( (bytes, time) -> {
 
-            List<byte[]> blockAsByte =  bytes.collect();
-            NetworkParameters params = TestNet3Params.get();
-
-           if(!blockAsByte.isEmpty()){
-               BlockTestNetManager blockManager = new BlockTestNetManager();
-               Block block = blockManager.blockMakerFromBytes(blockAsByte);
-               log.info("####### NEW BLOCK with hash: " + block.getHashAsString() + " ###########");
+        lines.foreachRDD(new VoidFunction2<JavaRDD<byte[]>, Time>() {
 
 
-               for( Transaction tx : block.getTransactions()){
-                   BitcoinTransaction bTx = new BitcoinTransaction(tx.getHashAsString(),
-                           block.getHashAsString(), tx.getInputs(), tx.getOutputs());
+            Mongo mongo = new Mongo(mongoHost, Integer.parseInt(mongoDBPort));
+            DB db = mongo.getDB(mongoDB);
+            DBCollection collection = db.getCollection(mongoDBCollection);
 
-                   log.info(bTx.toString());
-               }
+            @Override
+            public void call(JavaRDD<byte[]> bytes, Time time) throws Exception {
 
-               log.info("End transaction");
+                List<byte[]> blockAsByte = bytes.collect();
+                NetworkParameters params = TestNet3Params.get();
+                Gson gson = new Gson();
 
-           }
+                if (!blockAsByte.isEmpty()) {
+                    BlockTestNetManager blockManager = new BlockTestNetManager();
+                    Block block = blockManager.blockMakerFromBytes(blockAsByte);
+                    log.info("####### NEW BLOCK with hash: " + block.getHashAsString() + " ###########");
+                    log.info("Transaction into block: " + block.getTransactions().size());
 
+                    for (int i = 0; i < block.getTransactions().size(); i++) {
+                        Transaction tx = block.getTransactions().get(i);
+                        BitcoinTransaction bTx = new BitcoinTransaction(tx.getHashAsString(),
+                                block.getHashAsString(), tx.getInputs(), tx.getOutputs(), i);
+                        TransactionDBWrapper txDB = new TransactionDBWrapper(tx.getHashAsString(), block.getHashAsString(),
+                                bTx.getValidSender(), bTx.getValidReceiver());
+                        String json = gson.toJson(txDB);
+                        DBObject dbObject = (DBObject) JSON.parse(json);
+                        collection.insert(dbObject);
+                        log.info("Saved into db: " + json);
+
+                        final Producer<Long, String> producer = KafkaProducerBuilder.createProducer(kafkaHost + ":" + kafkaPort, kafkaAppID );
+                        final ProducerRecord<Long, String> record =
+                                new ProducerRecord<>(kafkaTopic, new Random().nextLong(),
+                                        json);
+                        try {
+                            RecordMetadata metadata = producer.send(record).get();
+                        } finally {
+                            producer.flush();
+                            producer.close();
+                        }
+
+                    }
+
+                    log.info("End transaction");
+                }
+            }
         });
+
 
         lines.print();
 

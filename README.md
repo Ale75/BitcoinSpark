@@ -13,6 +13,9 @@ It's tested on Ubuntu 17.10
  * ZMQ
  * Bitcoind server
  * Maven >= 3.5
+ * MongoDB 4.0.0
+ * Zookeper
+ * Kafka 2.11
 
 #### Installing JDK 1.8
 
@@ -133,6 +136,45 @@ To stop bitcoind
 To install maven use
 ```
     sudo apt-get install maven
+```
+
+#### Install MongoDB
+
+To install MongoDB v. 4.0.0
+Run following commands
+
+```
+
+    sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 9DA31620334BD75D9DCB49F368818C72E52529D4
+    
+    echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu xenial/mongodb-org/4.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-4.0.list
+    
+    sudo apt-get update
+    
+    sudo apt-get install -y mongodb-org 
+
+```
+
+### Install Zookeper
+
+To install zookeper run this command
+
+```
+    sudo apt-get install zookeeperd
+    
+    # Check the installation with 
+    # netstat -ant | grep :2181
+    
+```
+
+### Install Kafka server
+
+ ####TODO
+```
+    Remember to set 256m to JVM
+    
+    #List of Topics
+    /opt/kafka/bin/kafka-topics.sh --list  --zookeeper localhost:2181
 ```
 
 ### Compile and Start Code
