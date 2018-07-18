@@ -28,6 +28,7 @@ import org.apache.spark.streaming.zeromq.ZeroMQUtils;
 import org.bitcoinj.core.*;
 import org.bitcoinj.params.TestNet3Params;
 
+import java.io.File;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -80,15 +81,6 @@ public class App {
         log.info("Kafka AppID: " + kafkaAppID);
 
 
-
-        /**
-         *
-         * Grafo delle transazioni
-         *
-         */
-        //Graph<Transaction,String> transactionsGraph;
-
-
         /**
          * Create a local StreamingContext with two working thread and batch interval of 1 second.
          * The master requires 2 cores to prevent a starvation scenario.
@@ -129,6 +121,21 @@ public class App {
 
 
         /**
+         * Save to HDFS
+         * */
+        if(Boolean.parseBoolean(propMap.get("enableHDFS"))){
+            lines.foreachRDD((bytes, time)-> {
+
+                List<byte[]> blockAsByte = bytes.collect();
+                if (!blockAsByte.isEmpty()) {
+                    bytes.coalesce(1).saveAsTextFile(hadoopHdfs + File.separator + "blocks" + File.separator);
+                }
+
+            });
+        }
+
+
+        /**
          * Read raw array bytes and generate a Block object saved into MongoDB
          */
 
@@ -149,6 +156,7 @@ public class App {
                 if (!blockAsByte.isEmpty()) {
                     BlockTestNetManager blockManager = new BlockTestNetManager();
                     Block block = blockManager.blockMakerFromBytes(blockAsByte);
+                    
                     log.info("####### NEW BLOCK with hash: " + block.getHashAsString() + " ###########");
                     log.info("Transaction into block: " + block.getTransactions().size());
 

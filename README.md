@@ -16,6 +16,10 @@ It's tested on Ubuntu 17.10
  * MongoDB 4.0.0
  * Zookeper
  * Kafka 2.11
+ 
+ ### Optional 
+ 
+ * Hadoop 3.1.0
 
 #### Installing JDK 1.8
 
@@ -155,7 +159,28 @@ Run following commands
 
 ```
 
-### Install Zookeper
+#### Install Hadoop (on single cluster)
+
+ Follow the guide to url [Hadoop Homepage] https://hadoop.apache.org/docs/stable/hadoop-project-dist/hadoop-common/SingleCluster.html
+
+```
+    #Start hadoop
+    cd /usr/local/hadoop/sbin
+    ./start-all.sh
+    
+    #Stop hadoop
+    cd /usr/local/hadoop/sbin
+    ./stop-all.sh
+    
+    #Format HDFS
+    hadoop namenode -format
+    
+    #Web Console
+    http://localhost:9870/dfshealth.html
+    
+```
+
+#### Install Zookeper
 
 To install zookeper run this command
 
@@ -167,7 +192,7 @@ To install zookeper run this command
     
 ```
 
-### Install Kafka server
+#### Install Kafka server
 
  ####TODO
 ```
