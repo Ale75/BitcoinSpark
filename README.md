@@ -16,6 +16,7 @@ It's tested on Ubuntu 17.10
  * MongoDB 4.0.0
  * Zookeper
  * Kafka 2.11
+ * Neo4j 3.4.4
  
  ### Optional 
  
@@ -158,6 +159,25 @@ Run following commands
     sudo apt-get install -y mongodb-org 
 
 ```
+
+#### Install Neo4j
+
+   Follow steps on guide [Install Neo4j on ubuntu] https://datawookie.netlify.com/blog/2016/09/installing-neo4j-on-ubuntu-16.04/
+   
+   ```
+    # Start neo4j
+    sudo service neo4j start
+    
+    # Stop neo4j
+    sudo service neo4j stop
+    
+    # To disable authentication uncomment this row into file /etc/neo4j/neo4j.conf 
+        dbms.security.auth_enabled=false 
+    # Restart neo4j
+    
+    
+   ```
+   
 
 #### Install Hadoop (on single cluster)
 

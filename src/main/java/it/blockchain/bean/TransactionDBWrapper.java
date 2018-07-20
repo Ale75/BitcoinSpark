@@ -2,6 +2,7 @@
 package it.blockchain.bean;
 
 import java.io.Serializable;
+import java.util.Date;
 import java.util.List;
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
@@ -24,9 +25,15 @@ public class TransactionDBWrapper implements Serializable
     @SerializedName("transactionDBOutputs")
     @Expose
     private List<TransactionDBOutput> transactionDBOutputs = null;
+    @SerializedName("receivedTime")
+    @Expose
+    private Date receivedTime;
+
     private final static long serialVersionUID = -7794855747985696816L;
 
+
     /**
+
      * No args constructor for use in serialization
      * 
      */
@@ -39,13 +46,15 @@ public class TransactionDBWrapper implements Serializable
      * @param transactionDBOutputs
      * @param transactionInputs
      * @param blockHash
+     * @param receivedTime
      */
-    public TransactionDBWrapper(String transactionHash, String blockHash, List<String> transactionInputs, List<TransactionDBOutput> transactionDBOutputs) {
+    public TransactionDBWrapper(String transactionHash, String blockHash, List<String> transactionInputs, List<TransactionDBOutput> transactionDBOutputs, Date receivedTime) {
         super();
         this.transactionHash = transactionHash;
         this.blockHash = blockHash;
         this.transactionInputs = transactionInputs;
         this.transactionDBOutputs = transactionDBOutputs;
+        this.receivedTime = receivedTime;
     }
 
     public String getTransactionHash() {
@@ -80,26 +89,14 @@ public class TransactionDBWrapper implements Serializable
         this.transactionDBOutputs = transactionDBOutputs;
     }
 
-    @Override
-    public String toString() {
-        return new ToStringBuilder(this).append("transactionHash", transactionHash).append("blockHash", blockHash).append("transactionInputs", transactionInputs).append("transactionDBOutputs", transactionDBOutputs).toString();
+    public Date getReceivedTime() {
+        return receivedTime;
     }
 
-    @Override
-    public int hashCode() {
-        return new HashCodeBuilder().append(transactionHash).append(transactionDBOutputs).append(transactionInputs).append(blockHash).toHashCode();
+    public void setReceivedTime(Date receivedTime) {
+        this.receivedTime = receivedTime;
     }
 
-    @Override
-    public boolean equals(Object other) {
-        if (other == this) {
-            return true;
-        }
-        if ((other instanceof TransactionDBWrapper) == false) {
-            return false;
-        }
-        TransactionDBWrapper rhs = ((TransactionDBWrapper) other);
-        return new EqualsBuilder().append(transactionHash, rhs.transactionHash).append(transactionDBOutputs, rhs.transactionDBOutputs).append(transactionInputs, rhs.transactionInputs).append(blockHash, rhs.blockHash).isEquals();
-    }
+
 
 }

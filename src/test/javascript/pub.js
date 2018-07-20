@@ -23,7 +23,7 @@ fs.readFileSync(path).toString().split("\n").forEach(function(line, index, arr) 
     //console.log("Blocco hex: " + json.hexMessage);
     sock.send([ 'rawblock',  new Buffer(json.message.data)    ] );
     console.log("Inviato il blocco: " + index++ + " at " + new Date());
-    sleep.sleep(60);
+    sleep.sleep(120);
 });
 
 
