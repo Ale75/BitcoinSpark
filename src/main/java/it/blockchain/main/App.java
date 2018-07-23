@@ -208,11 +208,12 @@ public class App {
                         for(TransactionDBOutput tOut : bTx.getValidReceiver()) {
 
                             log.info("#### Saving transaction in Neo4j ####");
-
-                            neo4jManager.createRelation(Constants.NODE_NAME_FROM, Constants.NODE_LABEL, String.join(Constants.STRING_DELIMITER, bTx.getValidSender()), Constants.RELATIONS_LABEL,
+                            neo4jManager.createORupdate(Constants.NODE_LABEL, String.join(Constants.STRING_DELIMITER, bTx.getValidSender()), Constants.NODE_LABEL, tOut.getHash(),
+                                    Constants.RELATIONS_LABEL, Constants.TYPE_OF_MONEY, Double.toString(tOut.getValue()),bTx.getHash() ,bTx.getBlockHash(), df.format(bTx.getReceivedTime()));
+                            /*neo4jManager.createRelation(Constants.NODE_NAME_FROM, Constants.NODE_LABEL, String.join(Constants.STRING_DELIMITER, bTx.getValidSender()), Constants.RELATIONS_LABEL,
                                     Constants.TYPE_OF_MONEY, Double.toString(tOut.getValue()) ,
                                     bTx.getHash() ,  bTx.getBlockHash(), df.format(bTx.getReceivedTime()),
-                                    Constants.NODE_NAME_TO, Constants.NODE_LABEL, tOut.getHash());
+                                    Constants.NODE_NAME_TO, Constants.NODE_LABEL, tOut.getHash());*/
                         }
 
                         log.info("#### Sending data to kafka ####");

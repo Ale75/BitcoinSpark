@@ -26,7 +26,7 @@ public class Neo4jManager implements AutoCloseable {
                     @Override
                     public String execute( Transaction tx ) {
                         StatementResult result = tx.run(
-                                "Create (" + $fromNodeName + ":" + $fromLabel + " {hash:'" + $hashFrom + "'})" +
+                                "Merge (" + $fromNodeName + ":" + $fromLabel + " {hash:'" + $hashFrom + "'})" +
                                         "-[r:" + $relationLabel + " {type:'" + $relType + "', value: '" + $relValue +
                                         "', transactionHash:'" + $transactionHash +"',blockHash: '" + $blockHash + "', receivedTime:'" + receivedDate + "'}]->" +
                                         "(" + $toNodeName + ":" + $toLabel +" {hash:'" + $hashTo + "'})"
@@ -42,16 +42,21 @@ public class Neo4jManager implements AutoCloseable {
     }
 
     //TODO
-    public void createORupdate(){
+    public void createORupdate(String $fromLabel, String $hashFrom, String $toLabel, String $hashTo, String $relationLabel, String $relType,
+                               String $relValue, String $transactionHash, String $blockHash, String receivedDate){
 
         try (Session session = driver.session()) {
             String greeting = session.writeTransaction(new TransactionWork<String>(){
 
                 @Override
                 public String execute( Transaction tx ) {
-                    StatementResult result = tx.run("",
+                    StatementResult result = tx.run("Merge (a:" + $fromLabel + "{hash:'"+ $hashFrom + "'})\n" +
+                                    "Merge (b:" + $toLabel + "{hash:'" + $hashTo + "'})\n" +
+                                    "Merge (a)-[r:" + $relationLabel + " {type: '" + $relType + "', value: '" + $relValue +
+                            "', transactionHash:'" + $transactionHash +"',blockHash: '" + $blockHash + "', receivedTime:'" + receivedDate + "'}]->(b);",
+
                             parameters( "","") );
-                    return  result.single().get( 0 ).asString();
+                    return "Relationship Saved";
                 }
 
                 });
