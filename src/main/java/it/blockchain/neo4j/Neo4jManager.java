@@ -41,7 +41,7 @@ public class Neo4jManager implements AutoCloseable {
         }
     }
 
-    //TODO
+
     public void createORupdate(String $fromLabel, String $hashFrom, String $toLabel, String $hashTo, String $relationLabel, String $relType,
                                String $relValue, String $transactionHash, String $blockHash, String receivedDate){
 
