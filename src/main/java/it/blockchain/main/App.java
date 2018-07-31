@@ -21,6 +21,8 @@ import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.api.java.function.VoidFunction2;
+import org.apache.spark.graphx.Graph;
+import org.apache.spark.graphx.lib.PageRank;
 import org.apache.spark.rdd.RDD;
 import org.apache.spark.streaming.Duration;
 import org.apache.spark.streaming.Time;
@@ -32,6 +34,10 @@ import org.bitcoinj.params.TestNet3Params;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.spark.Neo4j;
+import org.neo4j.spark.Neo4jGraph;
+import scala.Option;
+import scala.Tuple2;
+import scala.reflect.ClassTag;
 
 import java.io.File;
 import java.text.DateFormat;
@@ -49,6 +55,9 @@ public class App {
     public static void main( String[] args ) throws InterruptedException {
 
         Map<String,String> propMap = PropertiesReader.readProperties("bitcoin.properties");
+        ClassTag<String> stringClassTag = scala.reflect.ClassTag$.MODULE$.apply(String.class);
+        ClassTag<Float> floatClassTag = scala.reflect.ClassTag$.MODULE$.apply(Float.class);
+        ClassTag<Long> longClassTag = scala.reflect.ClassTag$.MODULE$.apply(Long.class);
 
         String host = "tcp://"+ propMap.get("sparkHost") + ":" + propMap.get("sparkPort");
         String hadoopHdfs = propMap.get("hadoopHDFS");
@@ -142,7 +151,20 @@ public class App {
         log.info("Totale nodi attualmente nel database: " + nodes.count());
 
 
+        log.info("### Start PageRank calculation by Graphx ###");
+        Graph graph = Neo4jGraph.loadGraph(streamingContext.sparkContext().sc(),Constants.NODE_LABEL, ScalaUtils.convertListToSeq(Arrays.asList(Constants.RELATIONS_LABEL)), Constants.NODE_LABEL);
+        //log.info("Vertex count: " + graph.vertices().count());
+        //log.info("Edges count: " + graph.edges().count());
+        Graph pageRankGraph = PageRank.run(graph,Constants.NUMBER_OF_PAGE_RANK_ITERATIONS,Constants.RANDOM_RESET_PROBABILITY, stringClassTag, stringClassTag);
 
+
+        Neo4jGraph.saveGraph(streamingContext.sparkContext().sc(), pageRankGraph, Constants.NODE_PAGE_RANK_PROP, new Tuple2<String,String>(Constants.RELATIONS_RANK_LABEL, Constants.RELATIONSHIP_PAGE_RANK_PROP) ,
+                scala.Option.apply(new Tuple2<String,String>(Constants.NODE_RANK_LABEL, Constants.PAGE_RANK_REFERENCE_ID)), scala.Option.apply(new Tuple2<String,String>(Constants.NODE_RANK_LABEL, Constants.PAGE_RANK_REFERENCE_ID)),
+                true, stringClassTag, stringClassTag);
+                    /* Neo4jGraph.saveGraph(streamingContext.sparkContext().sc(), pageRankGraph, "rank", new Tuple2<String,String>(Constants.RELATIONS_RANK_LABEL, "ranking") ,
+                            scala.Option.apply(new Tuple2<String,String>(Constants.NODE_RANK_LABEL,"id")), scala.Option.apply(new Tuple2<String,String>(Constants.NODE_RANK_LABEL,"scondOption")),
+                            true, stringClassTag, stringClassTag);*/
+        log.info("### ENDING - PageRank calculation by Graphx ###");
 
         /**
          * Save to HDFS
@@ -210,10 +232,6 @@ public class App {
                             log.info("#### Saving transaction in Neo4j ####");
                             neo4jManager.createORupdate(Constants.NODE_LABEL, String.join(Constants.STRING_DELIMITER, bTx.getValidSender()), Constants.NODE_LABEL, tOut.getHash(),
                                     Constants.RELATIONS_LABEL, Constants.TYPE_OF_MONEY, Double.toString(tOut.getValue()),bTx.getHash() ,bTx.getBlockHash(), df.format(bTx.getReceivedTime()));
-                            /*neo4jManager.createRelation(Constants.NODE_NAME_FROM, Constants.NODE_LABEL, String.join(Constants.STRING_DELIMITER, bTx.getValidSender()), Constants.RELATIONS_LABEL,
-                                    Constants.TYPE_OF_MONEY, Double.toString(tOut.getValue()) ,
-                                    bTx.getHash() ,  bTx.getBlockHash(), df.format(bTx.getReceivedTime()),
-                                    Constants.NODE_NAME_TO, Constants.NODE_LABEL, tOut.getHash());*/
                         }
 
                         log.info("#### Sending data to kafka ####");
@@ -231,7 +249,25 @@ public class App {
 
                     }
 
+                    log.info("### Start PageRank calculation by Graphx ###");
+                    Graph graph = Neo4jGraph.loadGraph(streamingContext.sparkContext().sc(),Constants.NODE_LABEL, ScalaUtils.convertListToSeq(Arrays.asList(Constants.RELATIONS_LABEL)), Constants.NODE_LABEL);
+                    log.info("Vertex count: " + graph.vertices().count());
+                    log.info("Edges count: " + graph.edges().count());
+                    Graph pageRankGraph = PageRank.run(graph,Constants.NUMBER_OF_PAGE_RANK_ITERATIONS,Constants.RANDOM_RESET_PROBABILITY, stringClassTag, stringClassTag);
+
+
+                    Neo4jGraph.saveGraph(streamingContext.sparkContext().sc(), pageRankGraph, Constants.NODE_PAGE_RANK_PROP, new Tuple2<String,String>(Constants.RELATIONS_RANK_LABEL, Constants.RELATIONSHIP_PAGE_RANK_PROP) ,
+                            scala.Option.apply(new Tuple2<String,String>(Constants.NODE_RANK_LABEL, Constants.PAGE_RANK_REFERENCE_ID)), scala.Option.apply(new Tuple2<String,String>(Constants.NODE_RANK_LABEL, Constants.PAGE_RANK_REFERENCE_ID)),
+                            true, stringClassTag, stringClassTag);
+                    /* Neo4jGraph.saveGraph(streamingContext.sparkContext().sc(), pageRankGraph, "rank", new Tuple2<String,String>(Constants.RELATIONS_RANK_LABEL, "ranking") ,
+                            scala.Option.apply(new Tuple2<String,String>(Constants.NODE_RANK_LABEL,"id")), scala.Option.apply(new Tuple2<String,String>(Constants.NODE_RANK_LABEL,"scondOption")),
+                            true, stringClassTag, stringClassTag);*/
+                    log.info("### ENDING - PageRank calculation by Graphx ###");
+
+
                     log.info("End transaction");
+
+
                 }
             }
         });
